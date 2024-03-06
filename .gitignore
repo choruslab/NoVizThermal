@@ -3,3 +3,5 @@
 config.json
 results.csv
 database-initializer.js
+
+.DS_Store
