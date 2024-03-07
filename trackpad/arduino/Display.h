@@ -13,6 +13,6 @@ class Display {
         void printText(char text[]);
         void printImage(byte frame[][]);
         void clear();
-}
+};
 
 #endif
