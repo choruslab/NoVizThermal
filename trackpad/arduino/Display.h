@@ -11,8 +11,8 @@ class Display {
     public:
         Display();
         void printText(char text[]);
-        void printImage()
-
+        void printImage(byte frame[][]);
+        void clear();
 }
 
 #endif
