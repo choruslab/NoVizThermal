@@ -17,8 +17,6 @@
 #include <WiFiS3.h>
 #include "arduino_secrets.h" 
 
-char ssid[] = SECRET_SSID;
-char pass[] = SECRET_PASS;
 int status = WL_IDLE_STATUS;
 WiFiServer server(80);
 
@@ -44,8 +42,6 @@ bool is_peltier_active = false;
 void setup() {
   Serial.begin(9600);
   matrix.begin();
-
-  test_function();
 
   pinMode(GREEN, OUTPUT);
   pinMode(PELTIER, OUTPUT); 
@@ -87,10 +83,10 @@ void configure_wifi_connection() {
 
   while (status != WL_CONNECTED) {
     Serial.print("Attempting to connect to Network named: ");
-    Serial.println(ssid);
+    Serial.println(SECRET_SSID);
 
     // Connect to WPA/WPA2 network
-    status = WiFi.begin(ssid, pass);
+    status = WiFi.begin(SECRET_SSID, SECRET_PASS);
 
     // wait 10 seconds for connection:
     delay(10000);
@@ -109,12 +105,7 @@ void printWifiStatus() {
   IPAddress ip = WiFi.localIP();
   Serial.print("IP Address: ");
   Serial.println(ip);
-
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
+ 
   // print where to go in a browser:
   Serial.print("To see this page in action, open a browser to http://");
   Serial.println(ip);
@@ -142,17 +133,17 @@ void handle_requests(WiFiClient client) {
         request_data += c;
       }
 
-      if (request_data.endsWith("GET /H")) {
+      if (request_data.endsWith("POST /H")) {
         // matrix.renderBitmap(heart_frame, 8, 12);
-        Serial.println("GET /H");
+        Serial.println("POST /H");
         digitalWrite(GREEN, HIGH);
         is_peltier_active = true;
         analogWrite(PELTIER, ON);
       }
 
-      if (request_data.endsWith("GET /L")) {
+      if (request_data.endsWith("POST /L")) {
         // matrix.renderBitmap(empty_frame, 8, 12);
-        Serial.println("GET /L");
+        Serial.println("POST /L");
         digitalWrite(GREEN, LOW);
         is_peltier_active = false;
         analogWrite(PELTIER, OFF);
@@ -166,14 +157,14 @@ void send_HTML_response(WiFiClient client) {
   // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
   // and a content-type so the client knows what's coming, then a blank line:
   client.println("HTTP/1.1 200 OK");
-  client.println("Content-type:text/html");
-  client.println();
+  // client.println("Content-type:text/html");
+  // client.println();
 
   // the content of the HTTP response follows the header:
-  client.print("<p style=\"font-size:7vw;\">Click <a href=\"/H\">here</a> turn the LED on<br></p>");
-  client.print("<p style=\"font-size:7vw;\">Click <a href=\"/L\">here</a> turn the LED off<br></p>");
-  client.print("<h1> TEMPERATURE: </h1>");
-  client.print("<p>" + String(sensor0.readTempC()) + "</p>");
+  // client.print("<p style=\"font-size:7vw;\">Click <a href=\"/H\">here</a> turn the LED on<br></p>");
+  // client.print("<p style=\"font-size:7vw;\">Click <a href=\"/L\">here</a> turn the LED off<br></p>");
+  // client.print("<h1> TEMPERATURE: </h1>");
+  // client.print("<p>" + String(sensor0.readTempC()) + "</p>");
   
   // The HTTP response ends with another blank line:
   client.println();
@@ -206,8 +197,6 @@ void print_temperature() {
   matrix.beginDraw();
   matrix.stroke(0xFFFFFFFF);
   matrix.textScrollSpeed(80);
-  // add some static text
-  // will only show "UNO" (not enough space on the display)
   const String text = "   " + String(sensor0.readTempC());
   matrix.textFont(Font_5x7);
   matrix.beginText(0, 1, 0xFFFFFF);
