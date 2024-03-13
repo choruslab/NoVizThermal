@@ -57,13 +57,16 @@ void loop() {
     handle_peltier_temperature();
   }
 
-  print_temperature();
+  // print_temperature();
+  // Serial.println(sensor0.readTempC());
   
   WiFiClient client = server.available();
   if (client) {
     handle_requests(client);
 
-    // close the connection:
+    // Respond and close the connection:
+    client.println("HTTP/1.1 204 No Content\r\n\r\n");
+    client.flush();
     client.stop();
     Serial.println("client disconnected");
   }
@@ -111,63 +114,45 @@ void printWifiStatus() {
   Serial.println(ip);
 }
 
+/*
+ * HTTP REQUEST FORMAT:
+ * GET /resource HTTP/1.1\r\n
+ * Host: 10.101.101.10\r\n
+ * ...
+ * \r\n
+ */
 void handle_requests(WiFiClient client) {
   String request_data = "";
-    while (client.connected()) {
-    if (client.available()) {             // if there's bytes to read from the client,
-      char c = client.read();
-      Serial.write(c);
-      if (c == '\n') {
+  Serial.println("Client is here!");
+  while (client.connected()) {
+    if (client.available()) {
+      String request_line = client.readStringUntil('\n');
+      Serial.println(request_line);
 
-        // if the current line is blank, you got two newline characters in a row.
-        // that's the end of the client HTTP request
-        if (request_data.length() == 0) {
-          send_HTML_response(client);
-          break;
-
-        } else {    // if you got a newline, then clear request_data:
-          request_data = "";
-        }
-
-      } else if (c != '\r') {  // if you got anything else but a carriage return character,
-        request_data += c;
-      }
-
-      if (request_data.endsWith("POST /H")) {
-        // matrix.renderBitmap(heart_frame, 8, 12);
-        Serial.println("POST /H");
+      if (request_line.startsWith("PUT /H")) {
+        Serial.println("PUT /H");
         digitalWrite(GREEN, HIGH);
         is_peltier_active = true;
         analogWrite(PELTIER, ON);
+
+        break;
       }
 
-      if (request_data.endsWith("POST /L")) {
-        // matrix.renderBitmap(empty_frame, 8, 12);
-        Serial.println("POST /L");
+      if (request_line.startsWith("PUT /L")) {
+        Serial.println("PUT /L");
         digitalWrite(GREEN, LOW);
         is_peltier_active = false;
         analogWrite(PELTIER, OFF);
+
+        break;
+      }
+
+      if (request_line.startsWith("\r")) {
+        break;
       }
     }
-    
-  }
-}
-
-void send_HTML_response(WiFiClient client) {
-  // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-  // and a content-type so the client knows what's coming, then a blank line:
-  client.println("HTTP/1.1 200 OK");
-  // client.println("Content-type:text/html");
-  // client.println();
-
-  // the content of the HTTP response follows the header:
-  // client.print("<p style=\"font-size:7vw;\">Click <a href=\"/H\">here</a> turn the LED on<br></p>");
-  // client.print("<p style=\"font-size:7vw;\">Click <a href=\"/L\">here</a> turn the LED off<br></p>");
-  // client.print("<h1> TEMPERATURE: </h1>");
-  // client.print("<p>" + String(sensor0.readTempC()) + "</p>");
   
-  // The HTTP response ends with another blank line:
-  client.println();
+  }
 }
 
 
