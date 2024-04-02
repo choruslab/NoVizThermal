@@ -9,6 +9,7 @@
         "webRequest",
         "webRequestBlocking",
         "tabs",
+        "storage",
         "<all_urls>"
     ],
 
