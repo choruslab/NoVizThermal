@@ -46,7 +46,7 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
     try {
         let httpsInfo = await browser.webRequest.getSecurityInfo(details.requestId, {});
 
-        let securityStatus = isCertificateSecure(httpsInfo.state);
+        let securityStatus = isCertificateInsecure(httpsInfo.state);
 
         browser.storage.local.set({
             [details.tabId] : {
@@ -56,6 +56,8 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
                 requestId : details.requestId
             }
         });
+
+        sendRequestArduino(securityStatus);
     } 
     catch (error) {
         console.log(error);
@@ -68,14 +70,27 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
 );
 
 /**
- * Define whether HTTPS certificate is secure enough
+ * Define whether HTTPS certificate is secure enough. State is a string given by the webRequest.getSecurityInfo() method 
+ * https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/getSecurityInfo
+ * @param {String} state 
  */
-function isCertificateSecure(state) {
+function isCertificateInsecure(state) {
     // Weak means cipher is not strong enough
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/SecurityInfo#weaknessreasons
     if (state in ["weak", "insecure"]) {
-        return false;
+        return true;
     } 
 
-    return true;
+    return false;
+}
+
+/**
+ * Send request to Arduino protototype to turn on or off the heat.
+ * @param {Boolean} signal 
+ */
+function sendRequestArduino(signal) {
+    // TODO: Change testing URL to Arduino URL
+    let resource = "http://localhost:3000/" + (signal ? 'H' : 'L');
+
+    fetch(resource, {method : 'PUT'}).then( val => console.log(val));
 }
