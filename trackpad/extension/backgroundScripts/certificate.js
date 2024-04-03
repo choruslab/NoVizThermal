@@ -114,5 +114,10 @@ function sendRequestArduino(signal) {
     // TODO: Change testing URL to Arduino URL
     let resource = "http://localhost:3000/" + (signal ? 'H' : 'L');
 
-    fetch(resource, {method : 'PUT'}).then( val => console.log(val));
+    try {
+        fetch(resource, {method : 'PUT'});
+    }
+    catch (error) {
+        console.log(error);
+    }
 }
