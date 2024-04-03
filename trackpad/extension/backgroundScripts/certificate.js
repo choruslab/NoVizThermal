@@ -68,18 +68,18 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
     try {
         let httpsInfo = await browser.webRequest.getSecurityInfo(details.requestId, {});
 
-        let securityStatus = isCertificateInsecure(httpsInfo.state);
+        let insecureStatus = isCertificateInsecure(httpsInfo.state);
 
         browser.storage.local.set({
             [details.tabId] : {
                 url : details.url,
-                insecure : securityStatus,
-                stopped : !securityStatus,
+                insecure : insecureStatus,
+                stopped : !insecureStatus,
                 requestId : details.requestId
             }
         });
 
-        sendRequestArduino(securityStatus);
+        sendRequestArduino(insecureStatus);
     } 
     catch (error) {
         console.log(error);
@@ -99,7 +99,7 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
 function isCertificateInsecure(state) {
     // Weak means cipher is not strong enough
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/SecurityInfo#weaknessreasons
-    if (state in ["weak", "insecure"]) {
+    if (state === "weak" || state === "insecure") {
         return true;
     } 
 
