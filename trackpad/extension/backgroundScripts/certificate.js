@@ -43,18 +43,23 @@ browser.tabs.onCreated.addListener((tab) => {
  * Event called when HTTP request headers arrive. Get information about the website's HTTPS certificate
  */
 browser.webRequest.onHeadersReceived.addListener( async (details) => {
-    let httpsInfo = await browser.webRequest.getSecurityInfo(details.requestId);
+    try {
+        let httpsInfo = await browser.webRequest.getSecurityInfo(details.requestId, {});
 
-    let securityStatus = isCertificateSecure(httpsInfo.state);
+        let securityStatus = isCertificateSecure(httpsInfo.state);
 
-    browser.storage.local.set({
-        [details.tabId] : {
-            url : details.url,
-            insecure : securityStatus,
-            stopped : securityStatus,
-            requestId : details.requestId
-        }
-    })
+        browser.storage.local.set({
+            [details.tabId] : {
+                url : details.url,
+                insecure : securityStatus,
+                stopped : securityStatus,
+                requestId : details.requestId
+            }
+        });
+    } 
+    catch (error) {
+        console.log(error);
+    }
 
 },
 // Trigger events for all the main pages (not their resources)
