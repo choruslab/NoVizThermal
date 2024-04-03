@@ -20,19 +20,33 @@
 browser.tabs.onCreated.addListener((tab) => {
     // Exclude tabs that do not host content (i.e., dev tools tabs)
     if (tab.id !== browser.tabs.TAB_ID_NONE) {
-        browser.storage.local.set({[tab.id] : {
-            url : "",
-            insecure : "",
-            stopped : undefined,
-            requestId : undefined 
-        }})
+        browser.storage.local.set({[tab.id] : null})
     }
 });
 
 /**
- * Event called when user switches between tabs
+ * Event called when user switches between tabs. Activate/deactivate arduino of depending on the active tab
  */
-// browser.tabs.onActivated.addListener();
+browser.tabs.onActivated.addListener(async (tab) => {
+    try {
+        let results = await browser.storage.local.get(tab.tabId.toString());
+
+        if (Object.keys(results).length > 0) {
+            let activeTabInfo = results[tab.tabId];
+        
+            if (activeTabInfo === null || activeTabInfo.insecure === false || activeTabInfo.stopped === true) {
+                sendRequestArduino(false);
+            }
+            else {
+                sendRequestArduino(true);
+            }
+        }
+    } 
+    catch (error) {
+        console.log(error);
+    }
+
+});
 
 /**
  * Event called when a tab is deleted
@@ -52,7 +66,7 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
             [details.tabId] : {
                 url : details.url,
                 insecure : securityStatus,
-                stopped : securityStatus,
+                stopped : !securityStatus,
                 requestId : details.requestId
             }
         });
