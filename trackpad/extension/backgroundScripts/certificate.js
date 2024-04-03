@@ -49,9 +49,17 @@ browser.tabs.onActivated.addListener(async (tab) => {
 });
 
 /**
- * Event called when a tab is deleted
+ * Event called when a tab is deleted. Remove the tab entry from storage.
  */
-// browser.tabs.onRemoved.addListener();
+browser.tabs.onRemoved.addListener((tabId, _) => {
+    console.log(`Removing Tab: ${tabId}`);
+    try {
+        browser.storage.local.remove(tabId.toString());
+    }
+    catch (error) {
+        console.log(error);
+    }
+});
 
 /**
  * Event called when HTTP request headers arrive. Get information about the website's HTTPS certificate
