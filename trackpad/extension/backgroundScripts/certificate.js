@@ -46,7 +46,7 @@ browser.tabs.onActivated.addListener(async (tab) => {
         }
     } 
     catch (error) {
-        console.log(error);
+        console.log(`[browser.tabs.onActivated] ${error}`);
     }
 
 });
@@ -60,7 +60,7 @@ browser.tabs.onRemoved.addListener((tabId, _) => {
         browser.storage.local.remove(tabId.toString());
     }
     catch (error) {
-        console.log(error);
+        console.log(`[browser.tabs.onRemoved] ${error}`);
     }
 });
 
@@ -89,7 +89,7 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
         }
     } 
     catch (error) {
-        console.log(error);
+        console.log(`[browser.webRequest.onHeadersReceived] ${error}`);
     }
 
 },
@@ -100,17 +100,18 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
 
 
 browser.alarms.onAlarm.addListener(async (info) => {
-    // Request arduino for stopped status
-    let result = await requestStoppedData();
-    console.log(info.name)
-
-    if (result) {
-        let id = info.name.split("_").slice(-1)
-        let tab_info = await browser.storage.local.get(id)
-        tab_info[id]['stopped'] = result
-        browser.storage.local.set(tab_info);
-
-        browser.alarms.clear(info.name);
+    try {
+        let result = await requestStoppedData();
+        if (result) {
+            let id = info.name.split("_").slice(-1)
+            let tab_info = await browser.storage.local.get(id)
+            tab_info[id]['stopped'] = result
+            browser.storage.local.set(tab_info);
+    
+            browser.alarms.clear(info.name);
+        }
+    } catch (error) {
+        console.log(`[browser.alarms.onAlarm] ${error}`)
     }
 });
 
@@ -141,7 +142,7 @@ function requestNonVisualCue(signal) {
         fetch(resource, {method : 'PUT'});
     }
     catch (error) {
-        console.log(error);
+        console.log(`[requestNonVisualCue()] ${error}`);
     }
 }
 
@@ -155,7 +156,7 @@ async function requestStoppedData() {
         return (await fetch(resource)).json()
     } 
     catch (error) {
-        console.log(`${error} ar requestStoppedData()`)
+        console.log(`[requestStoppedData()] ${error}`)
     }
 }
 
