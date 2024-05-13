@@ -10,6 +10,7 @@
         "webRequestBlocking",
         "tabs",
         "storage",
+        "alarms",
         "<all_urls>"
     ],
 

@@ -28,17 +28,20 @@ browser.tabs.onCreated.addListener((tab) => {
  * Event called when user switches between tabs. Activate/deactivate arduino of depending on the active tab
  */
 browser.tabs.onActivated.addListener(async (tab) => {
+    browser.alarms.clear(`CHECK_ARDUINO_FOR_${tab.previousTabId}`)
     try {
         let results = await browser.storage.local.get(tab.tabId.toString());
 
         if (Object.keys(results).length > 0) {
             let activeTabInfo = results[tab.tabId];
         
-            if (activeTabInfo === null || activeTabInfo.insecure === false || activeTabInfo.stopped === true) {
-                sendRequestArduino(false);
-            }
-            else {
-                sendRequestArduino(true);
+            if (activeTabInfo !== null) {
+                let notifyArduino = activeTabInfo.insecure === true && activeTabInfo.stopped === false;
+                requestNonVisualCue(notifyArduino);
+                
+                if (notifyArduino) {
+                    createAlarm(tab.tabId);
+                }
             }
         }
     } 
@@ -79,7 +82,11 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
             }
         });
 
-        sendRequestArduino(insecureStatus);
+        requestNonVisualCue(insecureStatus);
+
+        if (insecureStatus) {
+            createAlarm(details.tabId);
+        }
     } 
     catch (error) {
         console.log(error);
@@ -90,6 +97,22 @@ browser.webRequest.onHeadersReceived.addListener( async (details) => {
 {urls: ["<all_urls>"], types: ["main_frame"]}, 
 ["blocking"]
 );
+
+
+browser.alarms.onAlarm.addListener(async (info) => {
+    // Request arduino for stopped status
+    let result = await requestStoppedData();
+    console.log(info.name)
+
+    if (result) {
+        let id = info.name.split("_").slice(-1)
+        let tab_info = await browser.storage.local.get(id)
+        tab_info[id]['stopped'] = result
+        browser.storage.local.set(tab_info);
+
+        browser.alarms.clear(info.name);
+    }
+});
 
 /**
  * Define whether HTTPS certificate is secure enough. State is a string given by the webRequest.getSecurityInfo() method 
@@ -107,10 +130,10 @@ function isCertificateInsecure(state) {
 }
 
 /**
- * Send request to Arduino protototype to turn on or off the heat.
+ * Send request a non-visual cue.
  * @param {Boolean} signal 
  */
-function sendRequestArduino(signal) {
+function requestNonVisualCue(signal) {
     // TODO: Change testing URL to Arduino URL
     let resource = "http://localhost:3000/" + (signal ? 'H' : 'L');
 
@@ -120,4 +143,30 @@ function sendRequestArduino(signal) {
     catch (error) {
         console.log(error);
     }
+}
+
+/**
+ * Get data about stopped status of the non-visual cue
+ */
+async function requestStoppedData() {
+    let resource = 'http://localhost:3000/stopped'
+
+    try {
+        return (await fetch(resource)).json()
+    } 
+    catch (error) {
+        console.log(`${error} ar requestStoppedData()`)
+    }
+}
+
+/**
+ * Create alarm to check arduino status
+ */
+function createAlarm(tab_id) {
+    const NAME = `CHECK_ARDUINO_FOR_${tab_id}`
+    const TIME = 0.2  // in minutes
+
+    browser.alarms.create(NAME, {
+        periodInMinutes: TIME
+    });
 }
