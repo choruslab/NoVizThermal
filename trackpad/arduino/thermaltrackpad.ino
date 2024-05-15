@@ -31,20 +31,24 @@ TMP102 sensor0;
 
 ArduinoLEDMatrix matrix;
 
-const int GREEN = 2;
+const int GREEN = 7;
 const int PELTIER = 11;
+const int SWITCH = 2;
 const int ON = 225;
 const int OFF = 0;
 const int MAX_TEMP = 30;
+
 bool is_peltier_active = false;
+bool is_switch_active = false;
 
 
 void setup() {
   Serial.begin(9600);
-  matrix.begin();
+  // matrix.begin();
 
   pinMode(GREEN, OUTPUT);
   pinMode(PELTIER, OUTPUT); 
+  pinMode(SWITCH, INPUT);
 
   configure_temperature_sensor();
 
@@ -58,7 +62,16 @@ void loop() {
   }
 
   // print_temperature();
-  // Serial.println(sensor0.readTempC());
+
+  // If button has been pressed, turn off peltier
+  // This change only happens if the peltier was on in the first place
+  if (is_switch_active && digitalRead(SWITCH)) {
+    digitalWrite(GREEN, LOW);
+    analogWrite(PELTIER, OFF);
+    is_peltier_active = false;
+    is_switch_active = false;
+  }
+
   
   WiFiClient client = server.available();
   if (client) {
@@ -108,10 +121,6 @@ void printWifiStatus() {
   IPAddress ip = WiFi.localIP();
   Serial.print("IP Address: ");
   Serial.println(ip);
- 
-  // print where to go in a browser:
-  Serial.print("To see this page in action, open a browser to http://");
-  Serial.println(ip);
 }
 
 /*
@@ -133,6 +142,7 @@ void handle_requests(WiFiClient client) {
         Serial.println("PUT /H");
         digitalWrite(GREEN, HIGH);
         is_peltier_active = true;
+        is_switch_active = true;
         analogWrite(PELTIER, ON);
 
         break;
@@ -142,6 +152,7 @@ void handle_requests(WiFiClient client) {
         Serial.println("PUT /L");
         digitalWrite(GREEN, LOW);
         is_peltier_active = false;
+        is_switch_active = false;
         analogWrite(PELTIER, OFF);
 
         break;
@@ -154,7 +165,6 @@ void handle_requests(WiFiClient client) {
   
   }
 }
-
 
 void configure_temperature_sensor() {
   Wire.begin();
